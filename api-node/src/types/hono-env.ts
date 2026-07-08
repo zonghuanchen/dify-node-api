@@ -1,4 +1,5 @@
 import type { Database } from '../db/index.js'
+import type { apps } from '../db/schema.js'
 
 /**
  * Hono custom environment type.
@@ -9,5 +10,7 @@ export interface AppEnv {
     db: Database
     accountId?: string
     tenantId?: string
+    /** App resolved from Service API token (set by requireApiToken middleware). */
+    serviceApiApp?: typeof apps.$inferSelect
   }
 }

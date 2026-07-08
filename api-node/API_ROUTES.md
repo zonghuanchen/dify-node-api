@@ -508,8 +508,8 @@
 | GET | `/messages/<message_id>/suggested` | `MessageSuggestedApi` |
 | GET | `/app/feedbacks` | `AppGetFeedbacksApi` |
 | POST | `/workflows/run` | `WorkflowRunApi` |
-| POST | `/workflows/<workflow_id>/run` | `WorkflowRunByIdApi` |
-| GET | `/workflows/run/<workflow_run_id>` | `WorkflowRunDetailApi` |
+| POST | `/workflows/<workflow_id>/run` | `WorkflowRunByIdApi` | ✅ |
+| GET | `/workflows/run/<workflow_run_id>` | `WorkflowRunDetailApi` | ✅ |
 | GET | `/workflows/logs` | `WorkflowAppLogApi` |
 | POST | `/workflows/tasks/<task_id>/stop` | `WorkflowTaskStopApi` |
 | GET | `/workflow/<task_id>/events` | `WorkflowEventsApi` |
@@ -701,5 +701,6 @@
 | Console API - 认证 | `POST /login`, `POST /logout`, `POST /refresh-token` | 邮箱密码登录、登出、Token 刷新 |
 | Console API - 认证 | `POST /email-register`, `/send-email`, `/validity` | 邮箱注册三步流程 |
 | Dev-only | `GET /ping-db` | 数据库连通性测试（仅开发环境） |
+| Service API | `POST /workflows/<workflow_id>/run`, `GET /workflows/run/<workflow_run_id>` | 工作流执行、运行详情查询（API Token 认证） |
 
-**总计：8 个路由已实现**
+**总计：10 个路由已实现**

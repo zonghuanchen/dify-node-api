@@ -11,6 +11,7 @@ import { loginRoute } from './routes/console/auth/login.route.js'
 import { registerRoute } from './routes/console/auth/register.route.js'
 import { pingRoute } from './routes/console/ping.route.js'
 import { versionRoute } from './routes/console/version.route.js'
+import { workflowRunRoute } from './routes/v1/workflow-run.route.js'
 import type { AppEnv } from './types/hono-env.js'
 
 const app = new Hono<AppEnv>()
@@ -35,6 +36,9 @@ app.route('/console/api', versionRoute)
 // Auth routes (public — no requireAuth middleware)
 app.route('/console/api', loginRoute)
 app.route('/console/api', registerRoute)
+
+// ── Service API Routes (/v1) — API token auth ─────────────────────
+app.route('/v1', workflowRunRoute)
 
 // ── Dev-only Routes ────────────────────────────────────────────────
 if (config.isDev) {
