@@ -13,7 +13,9 @@ import {
 } from '../lib/constants.js'
 import {
   AccountBannedError,
+  AuthError,
   AuthenticationFailedError,
+  RefreshTokenAccountNotFoundError,
   RefreshTokenNotFoundError,
 } from '../lib/errors.js'
 import { issueAccessToken, issueCsrfToken } from '../lib/jwt.js'
@@ -248,7 +250,11 @@ export const accountService = {
       .limit(1)
 
     if (!account) {
-      throw new RefreshTokenNotFoundError('Account not found for refresh token')
+      throw new RefreshTokenAccountNotFoundError()
+    }
+
+    if (account.status === 'banned') {
+      throw new AuthError('Account is banned.')
     }
 
     const newAccessToken = issueAccessToken(account.id)
