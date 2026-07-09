@@ -4,6 +4,9 @@ import { z } from 'zod'
 import type { Database } from '../db/index.js'
 import { apiTokens, apps, endUsers, workflowRuns } from '../db/schema.js'
 import { AppError, BadRequestError, NotFoundError } from '../lib/errors.js'
+import { GraphEngineRunner } from '../graph-engine/runner.js'
+import type { GraphDict } from '../graph-engine/graph.js'
+import type { RunnerResult } from '../graph-engine/runner.js'
 
 // ── Error classes ────────────────────────────────────────────────────────────
 
@@ -32,10 +35,29 @@ const workflowInputFileItemSchema = z.object({
   upload_file_id: z.string().optional(),
 })
 
+// Node shape for graph_dict.nodes entries
+const graphNodeSchema = z.object({
+  id: z.string(),
+  type: z.string(),
+  data: z.record(z.string(), z.unknown()).optional(),
+}).passthrough()
+
+const graphEdgeSchema = z.object({
+  source: z.string().optional(),
+  target: z.string().optional(),
+  sourceHandle: z.string().optional(),
+}).passthrough()
+
+const graphDictSchema = z.object({
+  nodes: z.array(graphNodeSchema),
+  edges: z.array(graphEdgeSchema),
+})
+
 export const workflowRunPayloadSchema = z.object({
   inputs: z.record(z.string(), z.unknown()).default({}),
   files: z.array(workflowInputFileItemSchema).nullable().optional(),
   response_mode: z.enum(['blocking', 'streaming']).optional(),
+  graph_dict: graphDictSchema.optional(),
 })
 
 export type WorkflowRunPayload = z.infer<typeof workflowRunPayloadSchema>
@@ -210,12 +232,12 @@ export const workflowService = {
   },
 
   /**
-   * Creates and returns a new WorkflowRun record.
-   * Mirrors the Python AppGenerateService.generate() call for workflow apps.
+   * Creates and returns a new WorkflowRun record, then executes the graph
+   * in a child process if `graph_dict` is provided in the payload.
    *
-   * Note: The actual workflow execution is handled by the Python backend
-   * (AppGenerateService -> Celery task). This method creates the run record
-   * and publishes a task to the Celery queue for Python workers to execute.
+   * When `graph_dict` is absent, only the run record is created (legacy behavior).
+   * The graph execution is delegated to GraphEngineRunner (subprocess), mirroring
+   * Python's Worker/Dispatcher architecture where Celery workers run GraphEngine.
    */
   async runWorkflow(
     db: Database,
@@ -236,6 +258,7 @@ export const workflowService = {
 
     const now = new Date()
     const runId = uuidv4()
+    const startTime = Date.now()
 
     const [run] = await db
       .insert(workflowRuns)
@@ -247,7 +270,7 @@ export const workflowService = {
         type: 'workflow',
         triggeredFrom: 'app-run',
         version: '1.0.0',
-        graph: null,
+        graph: payload.graph_dict ? JSON.stringify(payload.graph_dict) : null,
         inputs: JSON.stringify(payload.inputs),
         status: 'running',
         outputs: '{}',
@@ -263,6 +286,75 @@ export const workflowService = {
       })
       .returning()
 
-    return run!
+    const createdRun = run!
+
+    // Execute graph in subprocess if graph_dict is provided
+    if (payload.graph_dict) {
+      // Fire-and-forget: update record when execution completes
+      void this.executeInSubprocess(db, createdRun, payload.graph_dict as GraphDict, payload.inputs)
+    }
+
+    return createdRun
+  },
+
+  /**
+   * Executes a workflow graph in a child process and updates the DB record.
+   */
+  async executeInSubprocess(
+    db: Database,
+    run: typeof workflowRuns.$inferSelect,
+    graphDict: GraphDict,
+    inputs: Record<string, unknown>,
+  ): Promise<RunnerResult> {
+    const runner = new GraphEngineRunner()
+    const startTime = Date.now()
+
+    let result: RunnerResult
+    try {
+      result = await runner.run({
+        graphDict,
+        workflowId: run.workflowId,
+        inputs,
+      })
+    } catch (err) {
+      // Runner spawn failure
+      const errorMsg = err instanceof Error ? err.message : String(err)
+      await db
+        .update(workflowRuns)
+        .set({
+          status: 'failed',
+          error: errorMsg,
+          finishedAt: new Date(),
+          elapsedTime: (Date.now() - startTime) / 1000,
+        })
+        .where(eq(workflowRuns.id, run.id))
+
+      return { events: [], status: 'error', error: errorMsg, outputs: {} }
+    }
+
+    const elapsedSeconds = (Date.now() - startTime) / 1000
+
+    // Map runner status to DB status
+    const statusMap: Record<RunnerResult['status'], string> = {
+      succeeded: 'succeeded',
+      failed: 'failed',
+      aborted: 'stopped',
+      partial_succeeded: 'partial-succeeded',
+      error: 'failed',
+    }
+
+    await db
+      .update(workflowRuns)
+      .set({
+        status: statusMap[result.status] ?? 'failed',
+        outputs: JSON.stringify(result.outputs),
+        error: result.error ?? null,
+        finishedAt: new Date(),
+        elapsedTime: elapsedSeconds,
+        totalSteps: result.events.filter(e => e._type === 'node_run_succeeded').length,
+      })
+      .where(eq(workflowRuns.id, run.id))
+
+    return result
   },
 }

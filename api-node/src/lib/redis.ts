@@ -7,4 +7,8 @@ import { config } from '../config/index.js'
 export const redis = new Redis(config.redisUrl, {
   lazyConnect: true,
   maxRetriesPerRequest: 3,
+  retryStrategy(times) {
+    if (times > 3) return null // stop retrying after 3 attempts
+    return Math.min(times * 500, 3000)
+  },
 })

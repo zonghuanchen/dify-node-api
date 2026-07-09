@@ -391,7 +391,7 @@
 |---|---|---|
 | GET | `/workspaces` | `WorkspaceListApi` |
 | GET | `/all-workspaces` | `WorkspaceListApi` |
-| GET | `/workspaces/current` | `WorkspaceCurrentApi` |
+| POST | `/workspaces/current` | `TenantApi` | ✅ |
 | GET | `/workspaces/info` | `WorkspaceInfoApi` |
 | POST | `/workspaces/switch` | `WorkspaceSwitchApi` |
 | GET | `/workspaces/custom-config` | `WorkspaceCustomConfigApi` |
@@ -462,6 +462,7 @@
 |---|---|---|---|
 | GET | `/features` | `FeatureApi` |
 | GET | `/features/vector-space` | `FeatureVectorSpaceApi` |
+| GET | `/system-features` | `SystemFeatureApi` | ✅ |
 | GET | `/files/upload` | `FileApi` |
 | GET | `/files/<file_id>/preview` | `FilePreviewApi` |
 | GET | `/files/support-type` | `FileSupportTypeApi` |

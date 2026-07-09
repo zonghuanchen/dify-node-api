@@ -215,3 +215,129 @@ HTTP 请求
 | `VariablePool` | 节点间共享变量池，节点通过 key 读写 |
 | `ReadyQueue` | 待执行节点 ID 队列（内存实现） |
 | `CommandChannel` | 命令通道（内存 / Redis），用于外部控制 |
+
+---
+
+## Node.js 最小化实现计划
+
+> 以下为 GraphEngine 移植到 Node.js 的实现计划，采用单线程异步事件循环架构。
+
+### 架构
+
+单线程异步事件循环。无 Worker 线程，无独立分发器。节点通过 `for await` 遍历 `AsyncGenerator` 顺序执行，引擎在每个节点完成后内联处理边。
+
+```
+src/graph-engine/
+├── types.ts                  # 枚举: NodeState, NodeExecutionType, NodeType, ErrorStrategy
+├── events.ts                 # 事件类型层次 (graph, node, traversal events)
+├── graph.ts                  # Edge, Node (abstract), Graph (with fromDict)
+├── variable-pool.ts          # 简单 key-value 存储，用于节点输出
+├── graph-execution.ts        # 执行状态跟踪 (started/paused/aborted/error)
+├── state-manager.ts          # 节点/边状态 + 执行跟踪
+├── edge-processor.ts         # 边处理 + 跳过传播 (合并)
+├── graph-engine.ts           # 主编排器: run() 返回 AsyncGenerator<GraphEngineEvent>
+└── index.ts                  # Barrel export
+```
+
+### Task 1: 定义枚举和事件类型 (`types.ts`, `events.ts`)
+
+**`types.ts`** — 移植 Python 枚举：
+- `NodeState`: `UNKNOWN`, `TAKEN`, `SKIPPED`
+- `NodeExecutionType`: `ROOT`, `BRANCH`, `RESPONSE`, `NORMAL`
+- `NodeType`: 所有 Dify 节点类型的字符串联合 (`start`, `llm`, `code`, `if-else`, `end` 等)
+- `ErrorStrategy`: `FAIL_BRANCH`, `DEFAULT_VALUE`
+- `WorkflowNodeExecutionStatus`: `RUNNING`, `SUCCEEDED`, `FAILED`, `EXCEPTION`
+
+**`events.ts`** — 移植事件层次为可区分联合类型：
+- `GraphEngineEvent` (基类，`_type` 区分)
+- 图事件: `GraphRunStartedEvent`, `GraphRunSucceededEvent`, `GraphRunFailedEvent`, `GraphRunAbortedEvent`, `GraphRunPartialSucceededEvent`
+- 节点事件: `NodeRunStartedEvent`, `NodeRunSucceededEvent`, `NodeRunFailedEvent`, `NodeRunStreamChunkEvent`, `NodeRunExceptionEvent`, `NodeRunRetryEvent`
+- 遍历事件: `GraphEdgeTakenEvent`, `GraphEdgeSkippedEvent`
+
+### Task 2: 定义图数据结构 (`graph.ts`)
+
+从 `graphon/graph/edge.py` 和 `graphon/graph/graph.py` 移植：
+
+- **`Edge`**: `{ id, tail, head, sourceHandle, state }` (state = NodeState)
+- **`Node`** (抽象类/接口):
+  - 属性: `id`, `title`, `nodeType`, `executionType`, `errorStrategy`, `state`, `retryConfig`, `defaultValueDict`
+  - 方法: `run(): AsyncGenerator<GraphNodeEvent>` — 节点执行逻辑
+  - 方法: `ensureExecutionId()` — 分配唯一执行 ID
+- **`Graph`**:
+  - 属性: `nodes: Map<string, Node>`, `edges: Map<string, Edge>`, `inEdges`, `outEdges`, `rootNode`
+  - `static fromDict(graphDict, nodeFactory)` — 从 Python `workflow.graph_dict` JSON 格式解析
+  - `getOutgoingEdges(nodeId)`, `getIncomingEdges(nodeId)`
+- **`NodeFactory`** 接口: `createNode(config): Node`
+
+### Task 3: 实现 VariablePool 和 GraphExecution (`variable-pool.ts`, `graph-execution.ts`)
+
+**`variable-pool.ts`** — 简单变量存储：
+- `set(selector: string[], value: unknown)` — 按选择器元组存储
+- `get(selector: string[]): unknown`
+- `add(selector: string[], value: unknown)` — set 的别名
+
+**`graph-execution.ts`** — 执行状态聚合：
+- 属性: `workflowId`, `started`, `completed`, `aborted`, `paused`, `error`, `exceptionsCount`, `nodeExecutions`
+- 方法: `start()`, `complete()`, `abort(reason)`, `fail(error)`, `recordNodeFailure()`, `getOrCreateNodeExecution(nodeId)`
+- `NodeExecution`: `{ state, retryCount, executionId, markStarted(), markTaken(), markFailed(), incrementRetry() }`
+
+### Task 4: 实现 StateManager 和 EdgeProcessor (`state-manager.ts`, `edge-processor.ts`)
+
+**`state-manager.ts`** — 从 `graph_state_manager.py` 移植：
+- 节点操作: `enqueueNode(nodeId)`, `markNodeSkipped(nodeId)`, `isNodeReady(nodeId)`
+- 边操作: `markEdgeTaken(edgeId)`, `markEdgeSkipped(edgeId)`, `analyzeEdgeStates(edges)`, `categorizeBranchEdges(nodeId, selectedHandle)`
+- 执行跟踪: `startExecution(nodeId)`, `finishExecution(nodeId)`, `isExecutionComplete()`
+- 就绪队列: 简单 `string[]` 数组（无需多线程）
+
+**`edge-processor.ts`** — 从 `edge_processor.py` + `skip_propagator.py` 合并移植：
+- `processNodeSuccess(nodeId, selectedHandle?)` -> `{ readyNodes, events }`
+- 分支处理: 将边分类为已选择/未选择，跳过未选择路径
+- 跳过传播: 当所有入边都被跳过时，递归标记下游为跳过
+
+### Task 5: 实现 GraphEngine 编排器 (`graph-engine.ts`)
+
+从 `graph_engine.py` 移植核心生命周期，简化为单线程异步：
+
+```typescript
+class GraphEngine {
+  constructor(opts: {
+    workflowId: string
+    graph: Graph
+    variablePool: VariablePool
+    nodeFactory: NodeFactory
+  })
+
+  async *run(): AsyncGenerator<GraphEngineEvent> {
+    // 1. Yield GraphRunStartedEvent
+    // 2. 根节点入队
+    // 3. While 就绪队列有节点:
+    //    a. 出队下一个节点
+    //    b. for await (event of node.run()):
+    //       - yield event
+    //    c. NodeRunSucceeded 时: 处理边，入队下游
+    //    d. NodeRunFailed 时: 应用错误策略 (retry/fail-branch/default-value/abort)
+    // 4. Yield 终态事件 (Succeeded/Failed/Aborted/PartialSucceeded)
+  }
+
+  requestAbort(reason?: string): void  // 设置中止标志
+}
+```
+
+相比 Python 的关键简化：
+- 无 Worker 池 — 节点在 `run()` 循环中顺序执行
+- 无分发线程 — 边处理在每个节点完成后内联执行
+- 无命令通道 — 中止是一个简单方法调用
+- 无 Layers — 可后续作为 hook 添加
+
+### Task 6: Barrel export 和单元测试 (`index.ts`, tests)
+
+- 创建 `index.ts` barrel export
+- 在 `api-node/tests/graph-engine/` 编写基础单元测试：
+  - `graph.test.ts` — Graph.fromDict 解析
+  - `state-manager.test.ts` — 节点/边状态转换
+  - `edge-processor.test.ts` — 分支选择、跳过传播
+  - `graph-engine.test.ts` — 端到端：构建简单图 + mock 节点，运行引擎，验证事件序列
+
+### Task 7: 验证 type-check 和 lint
+
+- 在 `api-node/` 运行 `pnpm type-check` 和 `pnpm lint` 确保无错误

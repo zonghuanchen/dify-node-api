@@ -1,5 +1,16 @@
 import { z } from 'zod'
 
+/**
+ * Helper to parse boolean env vars ("true" / "false" strings).
+ * Zod's z.coerce.boolean() treats any non-empty string as true, so we need this.
+ */
+function boolEnv(defaultValue: boolean) {
+  return z
+    .string()
+    .default(String(defaultValue))
+    .transform((v) => v === 'true')
+}
+
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   HOST: z.string().default('0.0.0.0'),
@@ -14,6 +25,23 @@ const envSchema = z.object({
   REFRESH_TOKEN_EXPIRE_DAYS: z.coerce.number().default(30),
   CONSOLE_WEB_URL: z.string().default('http://localhost:3000'),
   CONSOLE_API_URL: z.string().default('http://localhost:5001'),
+
+  // ── Feature flags (mirror Python api/configs) ─────────────────
+  ENABLE_EMAIL_CODE_LOGIN: boolEnv(false),
+  ENABLE_EMAIL_PASSWORD_LOGIN: boolEnv(true),
+  ENABLE_SOCIAL_OAUTH_LOGIN: boolEnv(false),
+  ENABLE_COLLABORATION_MODE: boolEnv(true),
+  ALLOW_REGISTER: boolEnv(false),
+  ALLOW_CREATE_WORKSPACE: boolEnv(false),
+  MAIL_TYPE: z.string().default(''),
+  ENABLE_TRIAL_APP: boolEnv(false),
+  ENABLE_EXPLORE_BANNER: boolEnv(false),
+  ENABLE_LEARN_APP: boolEnv(true),
+  ENTERPRISE_ENABLED: boolEnv(false),
+  MARKETPLACE_ENABLED: boolEnv(true),
+  CREATORS_PLATFORM_FEATURES_ENABLED: boolEnv(true),
+  PLUGIN_MAX_PACKAGE_SIZE: z.coerce.number().default(15_728_640),
+  RBAC_ENABLED: boolEnv(false),
 })
 
 function loadConfig() {
@@ -37,6 +65,23 @@ function loadConfig() {
     consoleWebUrl: parsed.CONSOLE_WEB_URL,
     consoleApiUrl: parsed.CONSOLE_API_URL,
     isSecure,
+
+    // Feature flags
+    enableEmailCodeLogin: parsed.ENABLE_EMAIL_CODE_LOGIN,
+    enableEmailPasswordLogin: parsed.ENABLE_EMAIL_PASSWORD_LOGIN,
+    enableSocialOauthLogin: parsed.ENABLE_SOCIAL_OAUTH_LOGIN,
+    enableCollaborationMode: parsed.ENABLE_COLLABORATION_MODE,
+    allowRegister: parsed.ALLOW_REGISTER,
+    allowCreateWorkspace: parsed.ALLOW_CREATE_WORKSPACE,
+    mailType: parsed.MAIL_TYPE,
+    enableTrialApp: parsed.ENABLE_TRIAL_APP,
+    enableExploreBanner: parsed.ENABLE_EXPLORE_BANNER,
+    enableLearnApp: parsed.ENABLE_LEARN_APP,
+    enterpriseEnabled: parsed.ENTERPRISE_ENABLED,
+    marketplaceEnabled: parsed.MARKETPLACE_ENABLED,
+    creatorsPlatformFeaturesEnabled: parsed.CREATORS_PLATFORM_FEATURES_ENABLED,
+    pluginMaxPackageSize: parsed.PLUGIN_MAX_PACKAGE_SIZE,
+    rbacEnabled: parsed.RBAC_ENABLED,
   }
 }
 

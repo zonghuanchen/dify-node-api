@@ -10,6 +10,7 @@ export interface AppEnv {
     db: Database
     accountId?: string
     tenantId?: string
+    tenantRole?: string
     /** App resolved from Service API token (set by requireApiToken middleware). */
     serviceApiApp?: typeof apps.$inferSelect
   }

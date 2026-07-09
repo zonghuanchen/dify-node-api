@@ -54,3 +54,10 @@ export { EdgeProcessor } from './edge-processor.js'
 // Graph engine
 export { GraphEngine } from './graph-engine.js'
 export type { GraphEngineOptions, GraphEngineConfig } from './graph-engine.js'
+
+// Default node factory
+export { StubNode, DefaultNodeFactory } from './default-node-factory.js'
+
+// Runner (subprocess orchestrator)
+export { GraphEngineRunner } from './runner.js'
+export type { RunnerStartPayload, RunnerResult } from './runner.js'

@@ -152,3 +152,30 @@ export class RefreshTokenAccountNotFoundError extends AuthError {
     this.code = 'invalid_refresh_token_account'
   }
 }
+
+// ── Workspace / Account domain errors ─────────────────────────────
+
+/** Account has not completed initialization (403). */
+export class AccountNotInitializedError extends AppError {
+  constructor() {
+    super(403, 'account_not_initialized', 'Account is not initialized.')
+    this.name = 'AccountNotInitializedError'
+  }
+}
+
+/** Workspace is archived and no alternative workspace is available (401). */
+export class WorkspaceArchivedError extends AuthError {
+  constructor() {
+    super('Workspace is archived.')
+    this.name = 'WorkspaceArchivedError'
+    this.code = 'workspace_archived'
+  }
+}
+
+/** Account is not linked to the specified tenant (403). */
+export class AccountNotLinkTenantError extends AppError {
+  constructor(message = 'Account not linked to this workspace.') {
+    super(403, 'account_not_link_tenant', message)
+    this.name = 'AccountNotLinkTenantError'
+  }
+}

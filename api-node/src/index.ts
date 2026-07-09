@@ -1,3 +1,5 @@
+import { config as loadDotenv } from 'dotenv'
+loadDotenv()
 import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
@@ -10,7 +12,9 @@ import { pingDbRoute } from './routes/_dev/ping-db.route.js'
 import { loginRoute } from './routes/console/auth/login.route.js'
 import { registerRoute } from './routes/console/auth/register.route.js'
 import { pingRoute } from './routes/console/ping.route.js'
+import { systemFeaturesRoute } from './routes/console/system-features.route.js'
 import { versionRoute } from './routes/console/version.route.js'
+import { workspaceCurrentRoute } from './routes/console/workspaces/current.route.js'
 import { workflowRunRoute } from './routes/v1/workflow-run.route.js'
 import type { AppEnv } from './types/hono-env.js'
 
@@ -29,6 +33,11 @@ app.use('*', async (c, next) => {
   await next()
 })
 
+// ── Health Check (used by Docker healthcheck) ─────────────────────
+app.get('/health', (c) => {
+  return c.json({ status: 'ok', timestamp: new Date().toISOString() })
+})
+
 // ── Console API Routes (/console/api) ──────────────────────────────
 app.route('/console/api', pingRoute)
 app.route('/console/api', versionRoute)
@@ -36,6 +45,12 @@ app.route('/console/api', versionRoute)
 // Auth routes (public — no requireAuth middleware)
 app.route('/console/api', loginRoute)
 app.route('/console/api', registerRoute)
+
+// System features (public by design — needed for dashboard init)
+app.route('/console/api', systemFeaturesRoute)
+
+// Workspace routes (authenticated)
+app.route('/console/api', workspaceCurrentRoute)
 
 // ── Service API Routes (/v1) — API token auth ─────────────────────
 app.route('/v1', workflowRunRoute)
@@ -60,7 +75,7 @@ app.notFound((c) => {
   )
 })
 
-// ── Start Server (skip in test environment) ────────────────────────
+// ── Start Server (skip in test environment) ───────────────────────
 if (config.env !== 'test') {
   // Connect Redis (lazy — won't block startup)
   redis.connect().catch((err) => {
