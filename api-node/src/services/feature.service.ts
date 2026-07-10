@@ -54,6 +54,65 @@ export interface PluginManagerModel {
   enabled: boolean
 }
 
+// ── Tenant-level feature model (GET /features) ──────────────────
+
+export interface SubscriptionModel {
+  plan: string
+  interval: string
+}
+
+export interface BillingModel {
+  enabled: boolean
+  subscription: SubscriptionModel
+}
+
+export interface EducationModel {
+  enabled: boolean
+  activated: boolean
+}
+
+export interface LimitationModel {
+  size: number
+  limit: number
+}
+
+export interface QuotaModel {
+  usage: number
+  limit: number
+  reset_date: number
+}
+
+export interface KnowledgePipeline {
+  publish_enabled: boolean
+}
+
+/**
+ * Tenant-level feature flags — mirrors Python FeatureModel.
+ * Returned by GET /console/api/features.
+ */
+export interface FeatureModel {
+  billing: BillingModel
+  education: EducationModel
+  members: LimitationModel
+  apps: LimitationModel
+  vector_space: LimitationModel | null
+  knowledge_rate_limit: number
+  annotation_quota_limit: LimitationModel
+  documents_upload_quota: LimitationModel
+  docs_processing: string
+  can_replace_logo: boolean
+  model_load_balancing_enabled: boolean
+  dataset_operator_enabled: boolean
+  webapp_copyright_enabled: boolean
+  workspace_members: LicenseLimitationModel
+  is_allow_transfer_workspace: boolean
+  trigger_event: QuotaModel
+  api_rate_limit: QuotaModel
+  human_input_email_delivery_enabled: boolean
+  knowledge_pipeline: KnowledgePipeline
+  next_credit_reset_date: number
+}
+
 export interface SystemFeatureModel {
   enable_app_deploy: boolean
   sso_enforced_for_signin: boolean
@@ -177,6 +236,42 @@ export function getSystemFeatures(isAuthenticated: boolean = false): SystemFeatu
 
   if (config.creatorsPlatformFeaturesEnabled) {
     features.enable_creators_platform = true
+  }
+
+  return features
+}
+
+// ── Tenant-level features builder ───────────────────────────────
+
+/**
+ * Build tenant-level feature flags from environment config.
+ * Mirrors `FeatureService.get_features()` in Python.
+ *
+ * For self-hosted deployments (BILLING_ENABLED=false, ENTERPRISE_ENABLED=false),
+ * most billing/enterprise fields return defaults.
+ */
+export function getFeatures(_tenantId: string): FeatureModel {
+  const features: FeatureModel = {
+    billing: { enabled: false, subscription: { plan: 'sandbox', interval: '' } },
+    education: { enabled: config.educationEnabled, activated: false },
+    members: { size: 0, limit: 1 },
+    apps: { size: 0, limit: 10 },
+    vector_space: null, // excluded per Python's exclude_vector_space=True convention
+    knowledge_rate_limit: 10,
+    annotation_quota_limit: { size: 0, limit: 10 },
+    documents_upload_quota: { size: 0, limit: 50 },
+    docs_processing: 'standard',
+    can_replace_logo: config.canReplaceLogo,
+    model_load_balancing_enabled: config.modelLbEnabled,
+    dataset_operator_enabled: config.datasetOperatorEnabled,
+    webapp_copyright_enabled: false,
+    workspace_members: { enabled: false, size: 0, limit: 0 },
+    is_allow_transfer_workspace: true,
+    trigger_event: { usage: 0, limit: 3000, reset_date: 0 },
+    api_rate_limit: { usage: 0, limit: 5000, reset_date: 0 },
+    human_input_email_delivery_enabled: !config.billingEnabled, // true when not SaaS
+    knowledge_pipeline: { publish_enabled: config.enterpriseEnabled },
+    next_credit_reset_date: 0,
   }
 
   return features

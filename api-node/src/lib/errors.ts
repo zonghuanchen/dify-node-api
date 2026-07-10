@@ -87,6 +87,28 @@ export class AccountNotFoundError extends AppError {
   }
 }
 
+/**
+ * Dify has not been set up yet (401).
+ * Mirrors Python `NotSetupError` in controllers/console/error.py.
+ */
+export class NotSetupError extends AppError {
+  constructor() {
+    super(401, 'not_setup', 'Dify has not been initialized and installed yet.')
+    this.name = 'NotSetupError'
+  }
+}
+
+/**
+ * Init validation has not been completed (401).
+ * Mirrors Python `NotInitValidateError` in controllers/console/error.py.
+ */
+export class NotInitValidateError extends AppError {
+  constructor() {
+    super(401, 'not_init_validated', 'Init validation has not been completed yet.')
+    this.name = 'NotInitValidateError'
+  }
+}
+
 /** Email already in use (400). */
 export class EmailAlreadyInUseError extends AppError {
   constructor() {

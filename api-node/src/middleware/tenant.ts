@@ -5,18 +5,20 @@
  * current tenant (workspace) by looking up `tenant_account_joins.current = true`.
  *
  * Sets `tenantId` and `tenantRole` on the Hono context for downstream handlers.
+ *
+ * On failure, returns a 401 JSON response directly — mirroring Python
+ * `ext_login.py` `unauthorized_handler` instead of throwing.
  */
 
 import { and, eq } from 'drizzle-orm'
 import type { MiddlewareHandler } from 'hono'
 import { tenantAccountJoins, tenants } from '../db/schema.js'
-import { AuthError } from '../lib/errors.js'
 import type { AppEnv } from '../types/hono-env.js'
 
 export const resolveTenant: MiddlewareHandler<AppEnv> = async (c, next) => {
   const accountId = c.get('accountId')
   if (!accountId) {
-    throw new AuthError('Authentication required.')
+    return c.json({ code: 'unauthorized', message: 'Unauthorized.' }, 401)
   }
 
   const db = c.get('db')
@@ -38,7 +40,7 @@ export const resolveTenant: MiddlewareHandler<AppEnv> = async (c, next) => {
     .limit(1)
 
   if (!row) {
-    throw new AuthError('No current workspace found.')
+    return c.json({ code: 'unauthorized', message: 'Unauthorized.' }, 401)
   }
 
   c.set('tenantId', row.tenantId)

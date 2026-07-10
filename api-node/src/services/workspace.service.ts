@@ -49,6 +49,39 @@ function toTimestamp(date: Date | null | undefined): number | null {
 
 export const workspaceService = {
   /**
+   * Get all workspaces for an account.
+   * Returns (tenant, membership) pairs where tenant.status === 'normal'.
+   * Mirrors Python `TenantService.get_workspaces_for_account()`.
+   */
+  async getWorkspacesForAccount(db: Database, accountId: string, currentTenantId: string) {
+    const rows = await db
+      .select({
+        id: tenants.id,
+        name: tenants.name,
+        status: tenants.status,
+        createdAt: tenants.createdAt,
+        lastOpenedAt: tenantAccountJoins.lastOpenedAt,
+      })
+      .from(tenantAccountJoins)
+      .innerJoin(tenants, eq(tenantAccountJoins.tenantId, tenants.id))
+      .where(
+        and(
+          eq(tenantAccountJoins.accountId, accountId),
+          eq(tenants.status, 'normal'),
+        ),
+      )
+
+    return rows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      status: row.status,
+      created_at: toTimestamp(row.createdAt),
+      last_opened_at: toTimestamp(row.lastOpenedAt),
+      plan: 'sandbox', // self-hosted default; SaaS/enterprise would override
+      current: row.id === currentTenantId,
+    }))
+  },
+  /**
    * Get the current tenant for an account.
    * Returns the tenant record where tenant_account_joins.current = true.
    */

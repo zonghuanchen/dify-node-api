@@ -11,11 +11,20 @@ import { errorHandler } from './middleware/error-handler.js'
 import { pingDbRoute } from './routes/_dev/ping-db.route.js'
 import { loginRoute } from './routes/console/auth/login.route.js'
 import { registerRoute } from './routes/console/auth/register.route.js'
+import { profileRoute } from './routes/console/account/profile.route.js'
 import { pingRoute } from './routes/console/ping.route.js'
 import { systemFeaturesRoute } from './routes/console/system-features.route.js'
 import { versionRoute } from './routes/console/version.route.js'
 import { workspaceCurrentRoute } from './routes/console/workspaces/current.route.js'
+import { rbacRoute } from './routes/console/workspaces/rbac.route.js'
+import { installedAppsRoute } from './routes/console/installed-apps.route.js'
 import { workflowRunRoute } from './routes/v1/workflow-run.route.js'
+import { featuresRoute } from './routes/console/features.route.js'
+import { retrievalSettingRoute } from './routes/console/datasets/retrieval-setting.route.js'
+import { workspaceListRoute } from './routes/console/workspaces/list.route.js'
+import { appsRoute } from './routes/console/apps.route.js'
+import { exploreAppsRoute } from './routes/console/explore/apps.route.js'
+import { modelProvidersRoute } from './routes/console/workspaces/model-providers.route.js'
 import type { AppEnv } from './types/hono-env.js'
 
 const app = new Hono<AppEnv>()
@@ -49,8 +58,33 @@ app.route('/console/api', registerRoute)
 // System features (public by design — needed for dashboard init)
 app.route('/console/api', systemFeaturesRoute)
 
+// Account routes (authenticated)
+app.route('/console/api', profileRoute)
+
 // Workspace routes (authenticated)
 app.route('/console/api', workspaceCurrentRoute)
+app.route('/console/api', rbacRoute)
+
+// Installed apps routes (authenticated)
+app.route('/console/api', installedAppsRoute)
+
+// Features route (authenticated, tenant-scoped)
+app.route('/console/api', featuresRoute)
+
+// Dataset routes (authenticated)
+app.route('/console/api', retrievalSettingRoute)
+
+// Workspaces list route (authenticated)
+app.route('/console/api', workspaceListRoute)
+
+// Apps routes (authenticated)
+app.route('/console/api', appsRoute)
+
+// Explore apps routes (authenticated)
+app.route('/console/api', exploreAppsRoute)
+
+// Model providers stub routes (authenticated)
+app.route('/console/api', modelProvidersRoute)
 
 // ── Service API Routes (/v1) — API token auth ─────────────────────
 app.route('/v1', workflowRunRoute)

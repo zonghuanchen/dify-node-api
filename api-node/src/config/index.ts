@@ -42,6 +42,14 @@ const envSchema = z.object({
   CREATORS_PLATFORM_FEATURES_ENABLED: boolEnv(true),
   PLUGIN_MAX_PACKAGE_SIZE: z.coerce.number().default(15_728_640),
   RBAC_ENABLED: boolEnv(false),
+
+  // ── Vector store & tenant features ───────────────────────────
+  VECTOR_STORE: z.string().default('weaviate'),
+  CAN_REPLACE_LOGO: boolEnv(false),
+  MODEL_LB_ENABLED: boolEnv(false),
+  DATASET_OPERATOR_ENABLED: boolEnv(false),
+  EDUCATION_ENABLED: boolEnv(false),
+  BILLING_ENABLED: boolEnv(false),
 })
 
 function loadConfig() {
@@ -82,6 +90,14 @@ function loadConfig() {
     creatorsPlatformFeaturesEnabled: parsed.CREATORS_PLATFORM_FEATURES_ENABLED,
     pluginMaxPackageSize: parsed.PLUGIN_MAX_PACKAGE_SIZE,
     rbacEnabled: parsed.RBAC_ENABLED,
+
+    // Vector store & tenant features
+    vectorStore: parsed.VECTOR_STORE,
+    canReplaceLogo: parsed.CAN_REPLACE_LOGO,
+    modelLbEnabled: parsed.MODEL_LB_ENABLED,
+    datasetOperatorEnabled: parsed.DATASET_OPERATOR_ENABLED,
+    educationEnabled: parsed.EDUCATION_ENABLED,
+    billingEnabled: parsed.BILLING_ENABLED,
   }
 }
 

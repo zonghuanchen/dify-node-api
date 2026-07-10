@@ -1,6 +1,5 @@
 import type { MiddlewareHandler } from 'hono'
 import type { AppEnv } from '../types/hono-env.js'
-import { AuthError } from '../lib/errors.js'
 import { getAccessTokenFromCookie } from '../lib/cookie.js'
 import { verifyAccessToken } from '../lib/jwt.js'
 
@@ -11,6 +10,9 @@ import { verifyAccessToken } from '../lib/jwt.js'
  * Token sources (in order of priority):
  * 1. Authorization: Bearer <token> header
  * 2. access_token cookie
+ *
+ * On failure, returns a 401 JSON response directly — mirroring Python
+ * `ext_login.py` `unauthorized_handler` instead of throwing.
  */
 export const requireAuth: MiddlewareHandler<AppEnv> = async (c, next) => {
   // Try Authorization header first
@@ -26,11 +28,16 @@ export const requireAuth: MiddlewareHandler<AppEnv> = async (c, next) => {
   }
 
   if (!token) {
-    throw new AuthError('Authentication required.')
+    return c.json({ code: 'unauthorized', message: 'Unauthorized.' }, 401)
   }
 
-  const decoded = verifyAccessToken(token)
-  c.set('accountId', decoded.user_id)
+  try {
+    const decoded = verifyAccessToken(token)
+    c.set('accountId', decoded.user_id)
+  }
+  catch {
+    return c.json({ code: 'unauthorized', message: 'Unauthorized.' }, 401)
+  }
 
   await next()
 }

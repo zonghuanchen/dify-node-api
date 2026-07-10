@@ -1,4 +1,4 @@
-import { boolean, doublePrecision, index, integer, pgTable, text, timestamp, unique, varchar } from 'drizzle-orm/pg-core'
+import { boolean, doublePrecision, index, integer, json, pgTable, text, timestamp, unique, varchar } from 'drizzle-orm/pg-core'
 
 // ── accounts ──
 // Mirrors Python model: api/models/account.py Account class
@@ -66,6 +66,7 @@ export const apps = pgTable('apps', {
   iconType: varchar('icon_type', { length: 255 }),
   icon: varchar('icon', { length: 255 }),
   iconBackground: varchar('icon_background', { length: 255 }),
+  useIconAsAnswerIcon: boolean('use_icon_as_answer_icon').notNull().default(false),
   appModelConfigId: varchar('app_model_config_id', { length: 36 }),
   workflowId: varchar('workflow_id', { length: 36 }),
   status: varchar('status', { length: 255 }).notNull().default('normal'),
@@ -131,6 +132,13 @@ export const apiTokens = pgTable('api_tokens', {
   index('api_token_tenant_idx').on(t.tenantId, t.type),
 ])
 
+// ── dify_setups ──
+// Mirrors Python model: api/models/model.py DifySetup class
+export const difySetups = pgTable('dify_setups', {
+  version: varchar('version', { length: 255 }).primaryKey(),
+  setupAt: timestamp('setup_at').notNull().defaultNow(),
+})
+
 // ── end_users ──
 // Mirrors Python model: api/models/model.py EndUser class
 export const endUsers = pgTable('end_users', {
@@ -145,4 +153,107 @@ export const endUsers = pgTable('end_users', {
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 }, (t) => [
   index('end_user_session_id_idx').on(t.tenantId, t.type),
+])
+
+// ── installed_apps ──
+// Mirrors Python model: api/models/model.py InstalledApp class
+export const installedApps = pgTable('installed_apps', {
+  id: varchar('id', { length: 36 }).primaryKey(),
+  tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+  appId: varchar('app_id', { length: 36 }).notNull(),
+  appOwnerTenantId: varchar('app_owner_tenant_id', { length: 36 }).notNull(),
+  position: integer('position').notNull().default(0),
+  isPinned: boolean('is_pinned').notNull().default(false),
+  lastUsedAt: timestamp('last_used_at'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+}, (t) => [
+  index('installed_app_tenant_id_idx').on(t.tenantId),
+  index('installed_app_app_id_idx').on(t.appId),
+  unique('unique_tenant_app').on(t.tenantId, t.appId),
+])
+
+// ── recommended_apps ──
+// Mirrors Python model: api/models/model.py RecommendedApp class
+export const recommendedApps = pgTable('recommended_apps', {
+  id: varchar('id', { length: 36 }).primaryKey(),
+  appId: varchar('app_id', { length: 36 }).notNull(),
+  description: json('description').notNull(),
+  copyright: varchar('copyright', { length: 255 }).notNull(),
+  privacyPolicy: varchar('privacy_policy', { length: 255 }).notNull(),
+  category: varchar('category', { length: 255 }).notNull(),
+  categories: json('categories'),
+  customDisclaimer: text('custom_disclaimer').default(''),
+  position: integer('position').notNull().default(0),
+  isListed: boolean('is_listed').notNull().default(true),
+  isLearnDify: boolean('is_learn_dify').notNull().default(false),
+  isCloudOnly: boolean('is_cloud_only').notNull().default(false),
+  installCount: integer('install_count').notNull().default(0),
+  language: varchar('language', { length: 255 }).notNull().default('en-US'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (t) => [
+  index('recommended_app_app_id_idx').on(t.appId),
+  index('recommended_app_is_listed_idx').on(t.isListed, t.language),
+])
+
+// ── app_model_configs ──
+// Mirrors Python model: api/models/model.py AppModelConfig class
+// Only fields needed for installed-apps filtering are included.
+export const appModelConfigs = pgTable('app_model_configs', {
+  id: varchar('id', { length: 36 }).primaryKey(),
+  appId: varchar('app_id', { length: 36 }).notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+}, (t) => [
+  index('app_app_id_idx').on(t.appId),
+])
+
+// ── workflows ──
+// Mirrors Python model: api/models/workflow.py Workflow class
+// Only fields needed for installed-apps filtering are included.
+export const workflows = pgTable('workflows', {
+  id: varchar('id', { length: 36 }).primaryKey(),
+  tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+  appId: varchar('app_id', { length: 36 }).notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+})
+
+// ── app_stars ──
+// Mirrors Python model: api/models/model.py AppStar class
+export const appStars = pgTable('app_stars', {
+  id: varchar('id', { length: 36 }).primaryKey(),
+  tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+  appId: varchar('app_id', { length: 36 }).notNull(),
+  accountId: varchar('account_id', { length: 36 }).notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+}, (t) => [
+  index('app_star_tenant_id_idx').on(t.tenantId),
+  index('app_star_app_id_idx').on(t.appId),
+  index('app_star_account_id_idx').on(t.accountId),
+  unique('unique_app_star_tenant_account_app').on(t.tenantId, t.accountId, t.appId),
+])
+
+// ── trial_apps ──
+// Mirrors Python model: api/models/model.py TrialApp class
+export const trialApps = pgTable('trial_apps', {
+  id: varchar('id', { length: 36 }).primaryKey(),
+  appId: varchar('app_id', { length: 36 }).notNull(),
+  tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+}, (t) => [
+  index('trial_app_app_id_idx').on(t.appId),
+  index('trial_app_tenant_id_idx').on(t.tenantId),
+])
+
+// ── sites ──
+// Mirrors Python model: api/models/model.py Site class
+// Only fields used by the explore/apps endpoints are included.
+export const sites = pgTable('sites', {
+  id: varchar('id', { length: 36 }).primaryKey(),
+  appId: varchar('app_id', { length: 36 }).notNull(),
+  description: text('description'),
+  copyright: varchar('copyright', { length: 255 }),
+  privacyPolicy: varchar('privacy_policy', { length: 255 }),
+  customDisclaimer: text('custom_disclaimer'),
+}, (t) => [
+  index('site_app_id_idx').on(t.appId),
 ])
