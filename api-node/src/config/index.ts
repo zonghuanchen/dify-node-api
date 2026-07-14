@@ -43,6 +43,20 @@ const envSchema = z.object({
   PLUGIN_MAX_PACKAGE_SIZE: z.coerce.number().default(15_728_640),
   RBAC_ENABLED: boolEnv(false),
 
+  // ── Upload limits (mirror Python api/configs) ─────────────────
+  UPLOAD_FILE_SIZE_LIMIT: z.coerce.number().default(15),
+  UPLOAD_FILE_BATCH_LIMIT: z.coerce.number().default(5),
+  BATCH_UPLOAD_LIMIT: z.coerce.number().default(5),
+  UPLOAD_IMAGE_FILE_SIZE_LIMIT: z.coerce.number().default(10),
+  UPLOAD_VIDEO_FILE_SIZE_LIMIT: z.coerce.number().default(100),
+  UPLOAD_AUDIO_FILE_SIZE_LIMIT: z.coerce.number().default(50),
+  WORKFLOW_FILE_UPLOAD_LIMIT: z.coerce.number().default(10),
+  IMAGE_FILE_BATCH_LIMIT: z.coerce.number().default(10),
+  SINGLE_CHUNK_ATTACHMENT_LIMIT: z.coerce.number().default(10),
+  ATTACHMENT_IMAGE_FILE_SIZE_LIMIT: z.coerce.number().default(10),
+  STORAGE_TYPE: z.string().default('local'),
+  UPLOAD_FILE_EXTENSION_BLACKLIST: z.string().default(''),
+
   // ── Vector store & tenant features ───────────────────────────
   VECTOR_STORE: z.string().default('weaviate'),
   CAN_REPLACE_LOGO: boolEnv(false),
@@ -90,6 +104,22 @@ function loadConfig() {
     creatorsPlatformFeaturesEnabled: parsed.CREATORS_PLATFORM_FEATURES_ENABLED,
     pluginMaxPackageSize: parsed.PLUGIN_MAX_PACKAGE_SIZE,
     rbacEnabled: parsed.RBAC_ENABLED,
+
+    // Upload limits
+    uploadFileSizeLimit: parsed.UPLOAD_FILE_SIZE_LIMIT,
+    uploadFileBatchLimit: parsed.UPLOAD_FILE_BATCH_LIMIT,
+    batchUploadLimit: parsed.BATCH_UPLOAD_LIMIT,
+    uploadImageFileSizeLimit: parsed.UPLOAD_IMAGE_FILE_SIZE_LIMIT,
+    uploadVideoFileSizeLimit: parsed.UPLOAD_VIDEO_FILE_SIZE_LIMIT,
+    uploadAudioFileSizeLimit: parsed.UPLOAD_AUDIO_FILE_SIZE_LIMIT,
+    workflowFileUploadLimit: parsed.WORKFLOW_FILE_UPLOAD_LIMIT,
+    imageFileBatchLimit: parsed.IMAGE_FILE_BATCH_LIMIT,
+    singleChunkAttachmentLimit: parsed.SINGLE_CHUNK_ATTACHMENT_LIMIT,
+    attachmentImageFileSizeLimit: parsed.ATTACHMENT_IMAGE_FILE_SIZE_LIMIT,
+    storageType: parsed.STORAGE_TYPE,
+    uploadFileExtensionBlacklist: parsed.UPLOAD_FILE_EXTENSION_BLACKLIST
+      ? parsed.UPLOAD_FILE_EXTENSION_BLACKLIST.split(',').map((s) => s.trim().toLowerCase())
+      : [],
 
     // Vector store & tenant features
     vectorStore: parsed.VECTOR_STORE,

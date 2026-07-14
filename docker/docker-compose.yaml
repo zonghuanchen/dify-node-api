@@ -373,7 +373,7 @@ services:
     # image: langgenius/dify-web:1.15.0
     build:
       context: ..
-      dockerfile: web/Dockerfile
+      dockerfile: Dockerfile.web-local
     restart: always
     env_file:
       - path: ./envs/core-services/web.env

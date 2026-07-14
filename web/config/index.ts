@@ -6,30 +6,49 @@ import { PipelineInputVarType } from '@/models/pipeline'
 import { AgentStrategy } from '@/types/app'
 import pkg from '../package.json'
 
+/**
+ * Convert NEXT_PUBLIC_FOO_BAR → fooBar for body dataset lookup.
+ */
+const envKeyToDatasetKey = (envKey: string): string => {
+  const withoutPrefix = envKey.replace(/^NEXT_PUBLIC_/, '')
+  return withoutPrefix.toLowerCase().replace(/_([a-z0-9])/g, (_, c: string) => c.toUpperCase())
+}
+
 const getStringConfig = (
   envVar: string | undefined,
   defaultValue: string,
+  envKey?: string,
 ) => {
   if (envVar)
     return envVar
+  // Fallback: read directly from body dataset (handles timing issues with @t3-oss runtimeEnv)
+  if (typeof document !== 'undefined' && document.body && envKey) {
+    const datasetValue = document.body.dataset[envKeyToDatasetKey(envKey)]
+    if (datasetValue)
+      return datasetValue
+  }
   return defaultValue
 }
 
 export const API_PREFIX = getStringConfig(
   env.NEXT_PUBLIC_API_PREFIX,
-  'http://localhost:5001/console/api',
+  'http://localhost/console/api',
+  'NEXT_PUBLIC_API_PREFIX',
 )
 export const PUBLIC_API_PREFIX = getStringConfig(
   env.NEXT_PUBLIC_PUBLIC_API_PREFIX,
-  'http://localhost:5001/api',
+  'http://localhost/api',
+  'NEXT_PUBLIC_PUBLIC_API_PREFIX',
 )
 export const MARKETPLACE_API_PREFIX = getStringConfig(
   env.NEXT_PUBLIC_MARKETPLACE_API_PREFIX,
-  'http://localhost:5002/api',
+  'http://localhost/api',
+  'NEXT_PUBLIC_MARKETPLACE_API_PREFIX',
 )
 export const MARKETPLACE_URL_PREFIX = getStringConfig(
   env.NEXT_PUBLIC_MARKETPLACE_URL_PREFIX,
   '',
+  'NEXT_PUBLIC_MARKETPLACE_URL_PREFIX',
 )
 
 const EDITION = env.NEXT_PUBLIC_EDITION
@@ -111,6 +130,7 @@ const COOKIE_DOMAIN = getStringConfig(
 export const SOCKET_URL = getStringConfig(
   env.NEXT_PUBLIC_SOCKET_URL,
   'ws://localhost:5001',
+  'NEXT_PUBLIC_SOCKET_URL',
 ).trim()
 
 export const BATCH_CONCURRENCY = env.NEXT_PUBLIC_BATCH_CONCURRENCY

@@ -213,11 +213,23 @@ export const workflows = pgTable('workflows', {
   id: varchar('id', { length: 36 }).primaryKey(),
   tenantId: varchar('tenant_id', { length: 36 }).notNull(),
   appId: varchar('app_id', { length: 36 }).notNull(),
+  type: varchar('type', { length: 255 }),
+  kind: varchar('kind', { length: 255 }),
+  version: varchar('version', { length: 255 }),
+  markedName: varchar('marked_name', { length: 255 }).default(''),
+  markedComment: varchar('marked_comment', { length: 255 }).default(''),
+  graph: text('graph'),
+  features: text('features'),
   createdBy: varchar('created_by', { length: 36 }),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedBy: varchar('updated_by', { length: 36 }),
   updatedAt: timestamp('updated_at'),
-})
+  environmentVariables: text('environment_variables').default('{}'),
+  conversationVariables: text('conversation_variables').default('{}'),
+  ragPipelineVariables: text('rag_pipeline_variables').default('{}'),
+}, (t) => [
+  index('workflow_version_idx').on(t.tenantId, t.appId, t.version),
+])
 
 // ── app_stars ──
 // Mirrors Python model: api/models/model.py AppStar class
@@ -272,6 +284,46 @@ export const tagBindings = pgTable('tag_bindings', {
 }, (t) => [
   index('tag_bind_target_id_idx').on(t.targetId),
   index('tag_bind_tag_id_idx').on(t.tagId),
+])
+
+// ── app_triggers ──
+// Mirrors Python model: api/models/trigger.py AppTrigger class
+export const appTriggers = pgTable('app_triggers', {
+  id: varchar('id', { length: 36 }).primaryKey(),
+  tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+  appId: varchar('app_id', { length: 36 }).notNull(),
+  nodeId: varchar('node_id', { length: 64 }),
+  triggerType: varchar('trigger_type', { length: 50 }).notNull(),
+  title: varchar('title', { length: 255 }).notNull(),
+  providerName: varchar('provider_name', { length: 255 }),
+  status: varchar('status', { length: 50 }).notNull().default('enabled'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (t) => [
+  index('app_trigger_tenant_app_idx').on(t.tenantId, t.appId),
+])
+
+// ── upload_files ──
+// Mirrors Python model: api/models/model.py UploadFile class
+export const uploadFiles = pgTable('upload_files', {
+  id: varchar('id', { length: 36 }).primaryKey(),
+  tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+  storageType: varchar('storage_type', { length: 255 }).notNull(),
+  key: varchar('key', { length: 255 }).notNull(),
+  name: varchar('name', { length: 255 }).notNull(),
+  size: integer('size').notNull(),
+  extension: varchar('extension', { length: 255 }).notNull(),
+  mimeType: varchar('mime_type', { length: 255 }),
+  createdByRole: varchar('created_by_role', { length: 255 }).notNull().default('account'),
+  createdBy: varchar('created_by', { length: 36 }).notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  used: boolean('used').notNull().default(false),
+  usedBy: varchar('used_by', { length: 36 }),
+  usedAt: timestamp('used_at'),
+  hash: varchar('hash', { length: 255 }),
+  sourceUrl: text('source_url').default(''),
+}, (t) => [
+  index('upload_file_tenant_idx').on(t.tenantId),
 ])
 
 // ── sites ──

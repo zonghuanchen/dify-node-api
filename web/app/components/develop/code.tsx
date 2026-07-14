@@ -142,7 +142,7 @@ function CodePanel({ tag, label, children, targetCode }: ICodePanelProps) {
                 child
               )}
         </pre>
-        <CopyButton code={targetCode?.code ?? child.props.children.props.children} />
+        <CopyButton code={targetCode?.code ?? child?.props?.children?.props?.children} />
       </div>
     </div>
   )

@@ -1,0 +1,43 @@
+# Lightweight Dockerfile for dify-web using pre-built local artifacts
+FROM node:22.22.1-alpine
+
+ENV NODE_ENV=production
+ENV EDITION=SELF_HOSTED
+ENV DEPLOY_ENV=PRODUCTION
+ENV HOSTNAME=0.0.0.0
+ENV HOST=0.0.0.0
+ENV CONSOLE_API_URL=
+ENV APP_API_URL=
+ENV MARKETPLACE_API_URL=https://marketplace.dify.ai
+ENV MARKETPLACE_URL=https://marketplace.dify.ai
+ENV PORT=3000
+ENV EXPERIMENTAL_ENABLE_VINEXT=false
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# China mirrors
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
+RUN npm config set registry https://registry.npmmirror.com
+
+# set timezone
+ENV TZ=UTC
+RUN ln -s /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezone
+
+WORKDIR /app
+
+# Install runtime deps (standalone node_modules symlinks broken on Windows pnpm)
+RUN npm install next@16.2.9 react@19.2.7 react-dom@19.2.7 sharp@0.34.5 styled-jsx@5.1.6 --omit=dev
+
+# Create non-root user
+ARG dify_uid=1001
+RUN addgroup -S -g ${dify_uid} dify && adduser -S -u ${dify_uid} -G dify -s /bin/ash -h /home/dify dify && chown -R dify:dify /app
+
+# Copy pre-built artifacts from local build
+COPY --chown=dify:dify web/public ./targets/next/web/public
+COPY --chown=dify:dify web/.next/standalone/web ./targets/next/web
+COPY --chown=dify:dify web/.next/static ./targets/next/web/.next/static
+
+COPY --chown=dify:dify --chmod=755 web/docker/entrypoint.sh ./entrypoint.sh
+
+USER dify
+EXPOSE 3000
+ENTRYPOINT ["/bin/sh", "./entrypoint.sh"]

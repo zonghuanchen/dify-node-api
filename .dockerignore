@@ -2,6 +2,10 @@
 **/.pnpm-store
 **/dist
 **/.next
+!web/.next/standalone
+!web/.next/static
+!web/.next/build
+!web/.next/server
 **/.turbo
 **/.cache
 **/__pycache__

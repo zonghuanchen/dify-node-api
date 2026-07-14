@@ -1,0 +1,166 @@
+[
+  {
+    "type": "llm",
+    "config": {
+      "prompt_templates": {
+        "chat_model": {
+          "prompts": [
+            {
+              "role": "system",
+              "text": "You are a helpful AI assistant.",
+              "edition_type": "basic"
+            }
+          ]
+        },
+        "completion_model": {
+          "conversation_histories_role": {
+            "user_prefix": "Human",
+            "assistant_prefix": "Assistant"
+          },
+          "prompt": {
+            "text": "Here are the chat histories between human and assistant, inside <histories></histories> XML tags.\n\n<histories>\n{{#histories#}}\n</histories>\n\n\nHuman: {{#sys.query#}}\n\nAssistant:",
+            "edition_type": "basic"
+          },
+          "stop": [
+            "Human:"
+          ]
+        }
+      }
+    }
+  },
+  {
+    "type": "code",
+    "config": {
+      "variables": [
+        {
+          "variable": "arg1",
+          "value_selector": []
+        },
+        {
+          "variable": "arg2",
+          "value_selector": []
+        }
+      ],
+      "code_language": "python3",
+      "code": "\ndef main(arg1: str, arg2: str):\n    return {\n        \"result\": arg1 + arg2,\n    }\n",
+      "outputs": {
+        "result": {
+          "type": "string",
+          "children": null
+        }
+      }
+    }
+  },
+  {
+    "model": {
+      "prompt_templates": {
+        "completion_model": {
+          "conversation_histories_role": {
+            "user_prefix": "Human",
+            "assistant_prefix": "Assistant"
+          },
+          "stop": [
+            "Human:"
+          ]
+        }
+      }
+    }
+  },
+  {
+    "type": "question-classifier",
+    "config": {
+      "instructions": ""
+    }
+  },
+  {
+    "type": "http-request",
+    "config": {
+      "method": "get",
+      "authorization": {
+        "type": "no-auth"
+      },
+      "body": {
+        "type": "none"
+      },
+      "timeout": {
+        "connect": 10,
+        "read": 600,
+        "write": 600,
+        "max_connect_timeout": 10,
+        "max_read_timeout": 600,
+        "max_write_timeout": 600
+      },
+      "ssl_verify": true
+    },
+    "retry_config": {
+      "max_retries": 3,
+      "retry_interval": 2.0,
+      "retry_enabled": true
+    }
+  },
+  {
+    "type": "iteration",
+    "config": {
+      "is_parallel": false,
+      "parallel_nums": 10,
+      "error_handle_mode": "terminated",
+      "flatten_output": true
+    }
+  },
+  {
+    "type": "template-transform",
+    "config": {
+      "variables": [
+        {
+          "variable": "arg1",
+          "value_selector": []
+        }
+      ],
+      "template": "{{ arg1 }}"
+    }
+  },
+  {
+    "type": "plugin",
+    "config": {
+      "title": "",
+      "plugin_id": "",
+      "provider_id": "",
+      "event_name": "",
+      "subscription_id": "",
+      "plugin_unique_identifier": "",
+      "event_parameters": {}
+    }
+  },
+  {
+    "type": "trigger-schedule",
+    "config": {
+      "mode": "visual",
+      "frequency": "daily",
+      "visual_config": {
+        "time": "12:00 AM",
+        "on_minute": 0,
+        "weekdays": [
+          "sun"
+        ],
+        "monthly_days": [
+          1
+        ]
+      },
+      "timezone": "UTC"
+    }
+  },
+  {
+    "type": "webhook",
+    "config": {
+      "method": "get",
+      "content_type": "application/json",
+      "headers": [],
+      "params": [],
+      "body": [],
+      "async_mode": true,
+      "status_code": 200,
+      "response_body": "",
+      "timeout": 30
+    }
+  }
+]

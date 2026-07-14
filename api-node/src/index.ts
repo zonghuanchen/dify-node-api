@@ -28,6 +28,8 @@ import { exploreAppsRoute } from './routes/console/explore/apps.route.js'
 import { tagsRoute } from './routes/console/tags.route.js'
 import { modelProvidersRoute } from './routes/console/workspaces/model-providers.route.js'
 import { developerApiSettingsRoute } from './routes/console/enterprise/developer-api-settings.route.js'
+import { workflowsRoute } from './routes/console/workflows.route.js'
+import { filesRoute } from './routes/console/files.route.js'
 import type { AppEnv } from './types/hono-env.js'
 
 const app = new Hono<AppEnv>()
@@ -95,6 +97,12 @@ app.route('/console/api', modelProvidersRoute)
 
 // Enterprise developer API settings (authenticated)
 app.route('/console/api', developerApiSettingsRoute)
+
+// Workflows routes (authenticated — draft, block configs, triggers)
+app.route('/console/api', workflowsRoute)
+
+// Files routes (authenticated — upload config + file upload)
+app.route('/console/api', filesRoute)
 
 // ── Service API Routes (/v1) — API token auth ─────────────────────
 app.route('/v1', workflowRunRoute)

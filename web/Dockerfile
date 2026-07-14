@@ -42,9 +42,10 @@ COPY --from=packages /app/ .
 COPY . .
 
 WORKDIR /app/web
-ENV NODE_OPTIONS="--max-old-space-size=4096"
+ENV NODE_OPTIONS="--max-old-space-size=4096 --expose-gc"
 ENV pnpm_config_verify_deps_before_run=false
-RUN pnpm build && pnpm build:vinext
+ENV NEXT_TELEMETRY_DISABLED=1
+RUN pnpm build
 
 
 # production stage
@@ -79,7 +80,7 @@ WORKDIR /app
 COPY --from=builder --chown=dify:dify /app/web/public ./targets/next/web/public
 COPY --from=builder --chown=dify:dify /app/web/.next/standalone ./targets/next/
 COPY --from=builder --chown=dify:dify /app/web/.next/static ./targets/next/web/.next/static
-COPY --from=builder --chown=dify:dify /app/web/dist/standalone ./targets/vinext
+# COPY --from=builder --chown=dify:dify /app/web/dist/standalone ./targets/vinext
 
 COPY --chown=dify:dify --chmod=755 web/docker/entrypoint.sh ./entrypoint.sh
 
