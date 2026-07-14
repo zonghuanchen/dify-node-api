@@ -30,6 +30,11 @@ import { modelProvidersRoute } from './routes/console/workspaces/model-providers
 import { developerApiSettingsRoute } from './routes/console/enterprise/developer-api-settings.route.js'
 import { workflowsRoute } from './routes/console/workflows.route.js'
 import { filesRoute } from './routes/console/files.route.js'
+import { specRoute } from './routes/console/spec.route.js'
+import { agentProvidersRoute } from './routes/console/workspaces/agent-providers.route.js'
+import { toolProvidersRoute } from './routes/console/workspaces/tool-providers.route.js'
+import { workflowVariablesRoute } from './routes/console/workflow-variables.route.js'
+import { workflowCommentsRoute } from './routes/console/workflow-comments.route.js'
 import type { AppEnv } from './types/hono-env.js'
 
 const app = new Hono<AppEnv>()
@@ -103,6 +108,21 @@ app.route('/console/api', workflowsRoute)
 
 // Files routes (authenticated — upload config + file upload)
 app.route('/console/api', filesRoute)
+
+// Spec routes (authenticated — schema definitions stub)
+app.route('/console/api', specRoute)
+
+// Agent providers stub (authenticated — depends on Python plugin system)
+app.route('/console/api', agentProvidersRoute)
+
+// Tool providers stub (authenticated — depends on Python plugin system)
+app.route('/console/api', toolProvidersRoute)
+
+// Workflow variables routes (authenticated — draft variables, conversation vars, system vars)
+app.route('/console/api', workflowVariablesRoute)
+
+// Workflow comments route (authenticated — list comments)
+app.route('/console/api', workflowCommentsRoute)
 
 // ── Service API Routes (/v1) — API token auth ─────────────────────
 app.route('/v1', workflowRunRoute)

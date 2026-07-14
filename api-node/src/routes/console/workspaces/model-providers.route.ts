@@ -8,6 +8,7 @@
  *
  * GET /console/api/workspaces/current/model-providers
  * GET /console/api/workspaces/current/models/model-types/:model_type
+ * GET /console/api/workspaces/current/default-model?model_type=llm
  */
 
 import { Hono } from 'hono'
@@ -41,5 +42,24 @@ modelProvidersRoute.get(
     // Stub: return empty models list.
     // Full implementation requires Python plugin system (graphon.model_runtime).
     return c.json({ data: [] })
+  },
+)
+
+/**
+ * GET /workspaces/current/default-model?model_type=llm
+ * Returns the default model for a given model type.
+ * Mirrors Python DefaultModelApi.get() from models.py L200-216.
+ *
+ * NOTE: Returns null stub — full implementation requires Python plugin system.
+ */
+modelProvidersRoute.get(
+  '/workspaces/current/default-model',
+  requireAuth,
+  requireAccountInitialized,
+  resolveTenant,
+  (c) => {
+    // Stub: return null default model.
+    // Full implementation requires Python ModelProviderService.
+    return c.json({ data: null })
   },
 )

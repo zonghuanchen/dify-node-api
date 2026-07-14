@@ -357,3 +357,75 @@ export const sites = pgTable('sites', {
 }, (t) => [
   index('site_app_id_idx').on(t.appId),
 ])
+
+// ── workflow_draft_variables ──
+// Mirrors Python model: api/models/workflow.py WorkflowDraftVariable class
+export const workflowDraftVariables = pgTable('workflow_draft_variables', {
+  id: varchar('id', { length: 36 }).primaryKey(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  appId: varchar('app_id', { length: 36 }).notNull(),
+  userId: varchar('user_id', { length: 36 }),
+  lastEditedAt: timestamp('last_edited_at'),
+  nodeId: varchar('node_id', { length: 255 }).notNull(),
+  name: varchar('name', { length: 255 }).notNull(),
+  description: varchar('description', { length: 255 }).notNull().default(''),
+  selector: varchar('selector', { length: 255 }).notNull(),
+  valueType: varchar('value_type', { length: 20 }).notNull(),
+  value: text('value').notNull(),
+  visible: boolean('visible').notNull().default(true),
+  editable: boolean('editable').notNull().default(false),
+  nodeExecutionId: varchar('node_execution_id', { length: 36 }),
+  fileId: varchar('file_id', { length: 36 }),
+  isDefaultValue: boolean('is_default_value').notNull().default(false),
+}, (t) => [
+  index('wdv_app_user_node_name_idx').on(t.appId, t.userId, t.nodeId, t.name),
+  index('wdv_file_id_idx').on(t.fileId),
+])
+
+// ── workflow_comments ──
+// Mirrors Python model: api/models/comment.py WorkflowComment class
+export const workflowComments = pgTable('workflow_comments', {
+  id: varchar('id', { length: 36 }).primaryKey(),
+  tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+  appId: varchar('app_id', { length: 36 }).notNull(),
+  positionX: doublePrecision('position_x').notNull(),
+  positionY: doublePrecision('position_y').notNull(),
+  content: text('content').notNull(),
+  createdBy: varchar('created_by', { length: 36 }).notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  resolved: boolean('resolved').notNull().default(false),
+  resolvedAt: timestamp('resolved_at'),
+  resolvedBy: varchar('resolved_by', { length: 36 }),
+}, (t) => [
+  index('workflow_comments_app_idx').on(t.tenantId, t.appId),
+  index('workflow_comments_created_at_idx').on(t.createdAt),
+])
+
+// ── workflow_comment_replies ──
+// Mirrors Python model: api/models/comment.py WorkflowCommentReply class
+export const workflowCommentReplies = pgTable('workflow_comment_replies', {
+  id: varchar('id', { length: 36 }).primaryKey(),
+  commentId: varchar('comment_id', { length: 36 }).notNull(),
+  content: text('content').notNull(),
+  createdBy: varchar('created_by', { length: 36 }).notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (t) => [
+  index('comment_replies_comment_idx').on(t.commentId),
+  index('comment_replies_created_at_idx').on(t.createdAt),
+])
+
+// ── workflow_comment_mentions ──
+// Mirrors Python model: api/models/comment.py WorkflowCommentMention class
+export const workflowCommentMentions = pgTable('workflow_comment_mentions', {
+  id: varchar('id', { length: 36 }).primaryKey(),
+  commentId: varchar('comment_id', { length: 36 }).notNull(),
+  mentionedUserId: varchar('mentioned_user_id', { length: 36 }).notNull(),
+  replyId: varchar('reply_id', { length: 36 }),
+}, (t) => [
+  index('comment_mentions_comment_idx').on(t.commentId),
+  index('comment_mentions_reply_idx').on(t.replyId),
+  index('comment_mentions_user_idx').on(t.mentionedUserId),
+])
