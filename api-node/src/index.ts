@@ -33,6 +33,7 @@ import { filesRoute } from './routes/console/files.route.js'
 import { specRoute } from './routes/console/spec.route.js'
 import { agentProvidersRoute } from './routes/console/workspaces/agent-providers.route.js'
 import { toolProvidersRoute } from './routes/console/workspaces/tool-providers.route.js'
+import { triggerProvidersRoute } from './routes/console/workspaces/trigger-providers.route.js'
 import { workflowVariablesRoute } from './routes/console/workflow-variables.route.js'
 import { workflowCommentsRoute } from './routes/console/workflow-comments.route.js'
 import type { AppEnv } from './types/hono-env.js'
@@ -117,6 +118,9 @@ app.route('/console/api', agentProvidersRoute)
 
 // Tool providers stub (authenticated — depends on Python plugin system)
 app.route('/console/api', toolProvidersRoute)
+
+// Trigger providers stub (authenticated — depends on Python plugin system)
+app.route('/console/api', triggerProvidersRoute)
 
 // Workflow variables routes (authenticated — draft variables, conversation vars, system vars)
 app.route('/console/api', workflowVariablesRoute)

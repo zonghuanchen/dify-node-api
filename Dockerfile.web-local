@@ -25,7 +25,10 @@ RUN ln -s /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezone
 WORKDIR /app
 
 # Install runtime deps (standalone node_modules symlinks broken on Windows pnpm)
-RUN npm install next@16.2.9 react@19.2.7 react-dom@19.2.7 sharp@0.34.5 styled-jsx@5.1.6 --omit=dev
+RUN npm install next@16.2.9 react@19.2.7 react-dom@19.2.7 sharp@0.34.5 styled-jsx@5.1.6 loro-crdt@1.13.6 --omit=dev
+# Turbopack generates hashed external module refs (e.g. loro-crdt-<hash>);
+# create a symlink so Node.js can resolve the hashed name at runtime.
+RUN ln -s /app/node_modules/loro-crdt /app/node_modules/loro-crdt-a91f36f9e989ecb7
 
 # Create non-root user
 ARG dify_uid=1001
