@@ -178,7 +178,7 @@ const normalizeInstalledApp = (installedApp: InstalledAppResponse): InstalledApp
 
 const normalizeInstalledAppsResponse = (response: InstalledAppListResponse): InstalledAppsResponse => {
   return {
-    installed_apps: response.installed_apps.map(normalizeInstalledApp),
+    installed_apps: Array.isArray(response?.installed_apps) ? response.installed_apps.map(normalizeInstalledApp) : [],
   }
 }
 

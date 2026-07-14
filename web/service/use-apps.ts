@@ -102,7 +102,7 @@ function normalizeAppListItem(app: AppPartial): App {
 export function normalizeAppPagination(response: AppPagination): AppListResponse {
   return {
     ...response,
-    data: response.data.map(normalizeAppListItem),
+    data: Array.isArray(response?.data) ? response.data.map(normalizeAppListItem) : [],
   }
 }
 

@@ -17,6 +17,7 @@ import { systemFeaturesRoute } from './routes/console/system-features.route.js'
 import { versionRoute } from './routes/console/version.route.js'
 import { workspaceCurrentRoute } from './routes/console/workspaces/current.route.js'
 import { rbacRoute } from './routes/console/workspaces/rbac.route.js'
+import { membersRoute } from './routes/console/workspaces/members.route.js'
 import { installedAppsRoute } from './routes/console/installed-apps.route.js'
 import { workflowRunRoute } from './routes/v1/workflow-run.route.js'
 import { featuresRoute } from './routes/console/features.route.js'
@@ -24,7 +25,9 @@ import { retrievalSettingRoute } from './routes/console/datasets/retrieval-setti
 import { workspaceListRoute } from './routes/console/workspaces/list.route.js'
 import { appsRoute } from './routes/console/apps.route.js'
 import { exploreAppsRoute } from './routes/console/explore/apps.route.js'
+import { tagsRoute } from './routes/console/tags.route.js'
 import { modelProvidersRoute } from './routes/console/workspaces/model-providers.route.js'
+import { developerApiSettingsRoute } from './routes/console/enterprise/developer-api-settings.route.js'
 import type { AppEnv } from './types/hono-env.js'
 
 const app = new Hono<AppEnv>()
@@ -64,6 +67,7 @@ app.route('/console/api', profileRoute)
 // Workspace routes (authenticated)
 app.route('/console/api', workspaceCurrentRoute)
 app.route('/console/api', rbacRoute)
+app.route('/console/api', membersRoute)
 
 // Installed apps routes (authenticated)
 app.route('/console/api', installedAppsRoute)
@@ -80,11 +84,17 @@ app.route('/console/api', workspaceListRoute)
 // Apps routes (authenticated)
 app.route('/console/api', appsRoute)
 
+// Tags routes (authenticated)
+app.route('/console/api', tagsRoute)
+
 // Explore apps routes (authenticated)
 app.route('/console/api', exploreAppsRoute)
 
 // Model providers stub routes (authenticated)
 app.route('/console/api', modelProvidersRoute)
+
+// Enterprise developer API settings (authenticated)
+app.route('/console/api', developerApiSettingsRoute)
 
 // ── Service API Routes (/v1) — API token auth ─────────────────────
 app.route('/v1', workflowRunRoute)

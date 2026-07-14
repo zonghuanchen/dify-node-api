@@ -102,7 +102,7 @@ dify-trace-tencent = { workspace = true }
 dify-trace-weave = { workspace = true }
 
 [tool.uv]
-default-groups = ["storage", "tools", "vdb-all", "trace-all"]
+default-groups = ["storage", "tools"]
 package = false
 override-dependencies = [
     "litellm>=1.83.10,<2.0.0",

@@ -6,7 +6,7 @@
 
 import { and, eq, ne } from 'drizzle-orm'
 import type { Database } from '../db/index.js'
-import { tenantAccountJoins, tenants } from '../db/schema.js'
+import { accounts, tenantAccountJoins, tenants } from '../db/schema.js'
 import { AccountNotLinkTenantError } from '../lib/errors.js'
 
 // ── Response types ─────────────────────────────────────────────────
@@ -180,6 +180,47 @@ export const workspaceService = {
           eq(tenantAccountJoins.tenantId, tenantId),
         ),
       )
+  },
+
+  /**
+   * Get all members of a tenant (workspace).
+   * Mirrors Python `TenantService.get_tenant_members()` from account_service.py L1565.
+   *
+   * Returns account records augmented with their role in the tenant.
+   * RBAC roles are not yet implemented — `roles` returns an empty array.
+   */
+  async getTenantMembers(db: Database, tenantId: string) {
+    const rows = await db
+      .select({
+        id: accounts.id,
+        name: accounts.name,
+        email: accounts.email,
+        avatar: accounts.avatar,
+        lastLoginAt: accounts.lastLoginAt,
+        lastActiveAt: accounts.lastActiveAt,
+        createdAt: accounts.createdAt,
+        status: accounts.status,
+        role: tenantAccountJoins.role,
+      })
+      .from(accounts)
+      .innerJoin(tenantAccountJoins, eq(accounts.id, tenantAccountJoins.accountId))
+      .where(eq(tenantAccountJoins.tenantId, tenantId))
+
+    return {
+      accounts: rows.map((r) => ({
+        id: r.id,
+        name: r.name,
+        email: r.email,
+        avatar: r.avatar,
+        avatar_url: null,
+        last_login_at: toTimestamp(r.lastLoginAt),
+        last_active_at: toTimestamp(r.lastActiveAt),
+        created_at: toTimestamp(r.createdAt),
+        role: r.role,
+        roles: [] as { id: string; name: string }[],
+        status: r.status ?? '',
+      })),
+    }
   },
 
   /**

@@ -112,7 +112,7 @@ function List({
     }),
     select: data => ({
       ...data,
-      pages: data.pages.map(normalizeAppPagination),
+      pages: Array.isArray(data?.pages) ? data.pages.map(normalizeAppPagination) : [],
     }),
     refetchInterval: systemFeatures.enable_collaboration_mode ? 10000 : false,
   })

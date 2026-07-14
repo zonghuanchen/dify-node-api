@@ -209,12 +209,14 @@ export const appModelConfigs = pgTable('app_model_configs', {
 
 // ── workflows ──
 // Mirrors Python model: api/models/workflow.py Workflow class
-// Only fields needed for installed-apps filtering are included.
 export const workflows = pgTable('workflows', {
   id: varchar('id', { length: 36 }).primaryKey(),
   tenantId: varchar('tenant_id', { length: 36 }).notNull(),
   appId: varchar('app_id', { length: 36 }).notNull(),
+  createdBy: varchar('created_by', { length: 36 }),
   createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedBy: varchar('updated_by', { length: 36 }),
+  updatedAt: timestamp('updated_at'),
 })
 
 // ── app_stars ──
@@ -244,16 +246,62 @@ export const trialApps = pgTable('trial_apps', {
   index('trial_app_tenant_id_idx').on(t.tenantId),
 ])
 
+// ── tags ──
+// Mirrors Python model: api/models/model.py Tag class
+export const tags = pgTable('tags', {
+  id: varchar('id', { length: 36 }).primaryKey(),
+  tenantId: varchar('tenant_id', { length: 36 }),
+  type: varchar('type', { length: 16 }).notNull(),
+  name: varchar('name', { length: 255 }).notNull(),
+  createdBy: varchar('created_by', { length: 36 }).notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+}, (t) => [
+  index('tag_type_idx').on(t.type),
+  index('tag_name_idx').on(t.name),
+])
+
+// ── tag_bindings ──
+// Mirrors Python model: api/models/model.py TagBinding class
+export const tagBindings = pgTable('tag_bindings', {
+  id: varchar('id', { length: 36 }).primaryKey(),
+  tenantId: varchar('tenant_id', { length: 36 }),
+  tagId: varchar('tag_id', { length: 36 }),
+  targetId: varchar('target_id', { length: 36 }),
+  createdBy: varchar('created_by', { length: 36 }).notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+}, (t) => [
+  index('tag_bind_target_id_idx').on(t.targetId),
+  index('tag_bind_tag_id_idx').on(t.tagId),
+])
+
 // ── sites ──
 // Mirrors Python model: api/models/model.py Site class
-// Only fields used by the explore/apps endpoints are included.
 export const sites = pgTable('sites', {
   id: varchar('id', { length: 36 }).primaryKey(),
   appId: varchar('app_id', { length: 36 }).notNull(),
+  title: varchar('title', { length: 255 }).notNull().default(''),
+  iconType: varchar('icon_type', { length: 255 }),
+  icon: varchar('icon', { length: 255 }),
+  iconBackground: varchar('icon_background', { length: 255 }),
   description: text('description'),
+  defaultLanguage: varchar('default_language', { length: 255 }).notNull().default('en-US'),
+  chatColorTheme: varchar('chat_color_theme', { length: 255 }),
+  chatColorThemeInverted: boolean('chat_color_theme_inverted').notNull().default(false),
   copyright: varchar('copyright', { length: 255 }),
   privacyPolicy: varchar('privacy_policy', { length: 255 }),
-  customDisclaimer: text('custom_disclaimer'),
+  inputPlaceholder: varchar('input_placeholder', { length: 255 }),
+  showWorkflowSteps: boolean('show_workflow_steps').notNull().default(true),
+  useIconAsAnswerIcon: boolean('use_icon_as_answer_icon').notNull().default(false),
+  customDisclaimer: text('custom_disclaimer').default(''),
+  customizeDomain: varchar('customize_domain', { length: 255 }),
+  customizeTokenStrategy: varchar('customize_token_strategy', { length: 255 }).notNull().default('must-use'),
+  promptPublic: boolean('prompt_public').notNull().default(false),
+  status: varchar('status', { length: 255 }).notNull().default('normal'),
+  code: varchar('code', { length: 255 }),
+  createdBy: varchar('created_by', { length: 36 }),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedBy: varchar('updated_by', { length: 36 }),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
 }, (t) => [
   index('site_app_id_idx').on(t.appId),
 ])
