@@ -64,6 +64,9 @@ const envSchema = z.object({
   DATASET_OPERATOR_ENABLED: boolEnv(false),
   EDUCATION_ENABLED: boolEnv(false),
   BILLING_ENABLED: boolEnv(false),
+
+  // ── Model runtime ────────────────────────────────────────────
+  MODEL_PROVIDERS_DIR: z.string().default('./providers'),
 })
 
 function loadConfig() {
@@ -128,6 +131,9 @@ function loadConfig() {
     datasetOperatorEnabled: parsed.DATASET_OPERATOR_ENABLED,
     educationEnabled: parsed.EDUCATION_ENABLED,
     billingEnabled: parsed.BILLING_ENABLED,
+
+    // Model runtime
+    modelProvidersDir: parsed.MODEL_PROVIDERS_DIR,
   }
 }
 
