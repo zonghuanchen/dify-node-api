@@ -55,16 +55,14 @@ registerRoute.post(
     const db = c.get('db')
     const normalizedEmail = email.toLowerCase()
 
-    // Check if email is already registered (case-fallback)
+    // Python behavior: allow existing accounts (sends different email template).
+    // Check if account exists to determine which template to use.
     const existingAccount = await accountService.getAccountWithCaseFallback(db, email)
-    if (existingAccount) {
-      throw new EmailAlreadyInUseError()
-    }
 
     // Generate verification code + token
     const { code, token } = await accountService.generateEmailRegisterToken(normalizedEmail)
 
-    // In a real implementation, send the code via email here.
+    // TODO: Send actual email via task queue (different template for existing vs new accounts).
     // For now, return the token (and code in dev mode for testing).
     const responseData: Record<string, string> = { token }
     if (process.env.NODE_ENV === 'development') {
@@ -170,8 +168,8 @@ registerRoute.post(
 
     const email = typeof registerData.email === 'string' ? registerData.email.toLowerCase() : ''
 
-    // Check if email already registered
-    const existingAccount = await accountService.getAccountByEmail(db, email)
+    // Check if email already registered (case-fallback — mirrors Python get_account_by_email_with_case_fallback)
+    const existingAccount = await accountService.getAccountWithCaseFallback(db, email)
     if (existingAccount) {
       throw new EmailAlreadyInUseError()
     }

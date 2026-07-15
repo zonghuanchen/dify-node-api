@@ -15,10 +15,12 @@ import {
   clearAuthCookies,
 } from '../../../lib/cookie.js'
 import { verifyAccessToken } from '../../../lib/jwt.js'
+import { decryptField } from '../../../lib/encryption.js'
 
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
+  language: z.string().optional(),
   remember_me: z.boolean().optional().default(false),
 })
 
@@ -36,9 +38,15 @@ loginRoute.post(
     if (!parsed.success) {
       return c.json({ status: 'error', code: 'validation_error', message: parsed.error.message }, 400)
     }
-    const { email, password } = parsed.data
+    const { email, password: encodedPassword } = parsed.data
     const db = c.get('db')
     const normalizedEmail = email.toLowerCase()
+
+    // Decode base64-encoded password from frontend (mirrors Python @decrypt_password_field)
+    const password = decryptField(encodedPassword)
+    if (password === null) {
+      throw new AuthenticationFailedError()
+    }
 
     // Check rate limit
     const isRateLimited = await accountService.isLoginErrorRateLimit(normalizedEmail)
