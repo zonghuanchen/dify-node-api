@@ -429,3 +429,101 @@ export const workflowCommentMentions = pgTable('workflow_comment_mentions', {
   index('comment_mentions_reply_idx').on(t.replyId),
   index('comment_mentions_user_idx').on(t.mentionedUserId),
 ])
+
+// ── providers ──
+// Mirrors Python model: api/models/provider.py Provider class
+export const providers = pgTable('providers', {
+  id: varchar('id', { length: 36 }).primaryKey(),
+  tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+  providerName: varchar('provider_name', { length: 255 }).notNull(),
+  providerType: varchar('provider_type', { length: 40 }).notNull().default('custom'),
+  isValid: boolean('is_valid').notNull().default(false),
+  lastUsed: timestamp('last_used'),
+  credentialId: varchar('credential_id', { length: 36 }),
+  quotaType: varchar('quota_type', { length: 40 }).default(''),
+  quotaLimit: integer('quota_limit'),
+  quotaUsed: integer('quota_used').default(0),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (t) => [
+  index('provider_tenant_id_provider_idx').on(t.tenantId, t.providerName),
+  unique('unique_provider_name_type_quota').on(t.tenantId, t.providerName, t.providerType, t.quotaType),
+])
+
+// ── provider_models ──
+// Mirrors Python model: api/models/provider.py ProviderModel class
+export const providerModels = pgTable('provider_models', {
+  id: varchar('id', { length: 36 }).primaryKey(),
+  tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+  providerName: varchar('provider_name', { length: 255 }).notNull(),
+  modelName: varchar('model_name', { length: 255 }).notNull(),
+  modelType: varchar('model_type', { length: 40 }).notNull(),
+  credentialId: varchar('credential_id', { length: 36 }),
+  isValid: boolean('is_valid').notNull().default(false),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (t) => [
+  index('provider_model_tenant_id_provider_idx').on(t.tenantId, t.providerName),
+  unique('unique_provider_model_name').on(t.tenantId, t.providerName, t.modelName, t.modelType),
+])
+
+// ── provider_credentials ──
+// Mirrors Python model: api/models/provider.py ProviderCredential class
+export const providerCredentials = pgTable('provider_credentials', {
+  id: varchar('id', { length: 36 }).primaryKey(),
+  tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+  providerName: varchar('provider_name', { length: 255 }).notNull(),
+  credentialName: varchar('credential_name', { length: 255 }).notNull(),
+  encryptedConfig: text('encrypted_config').notNull(),
+  userId: varchar('user_id', { length: 36 }),
+  visibility: varchar('visibility', { length: 40 }).notNull().default('all_team_members'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (t) => [
+  index('provider_credential_tenant_provider_idx').on(t.tenantId, t.providerName),
+])
+
+// ── provider_model_credentials ──
+// Mirrors Python model: api/models/provider.py ProviderModelCredential class
+export const providerModelCredentials = pgTable('provider_model_credentials', {
+  id: varchar('id', { length: 36 }).primaryKey(),
+  tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+  providerName: varchar('provider_name', { length: 255 }).notNull(),
+  modelName: varchar('model_name', { length: 255 }).notNull(),
+  modelType: varchar('model_type', { length: 40 }).notNull(),
+  credentialName: varchar('credential_name', { length: 255 }).notNull(),
+  encryptedConfig: text('encrypted_config').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (t) => [
+  index('provider_model_credential_tenant_provider_model_idx').on(t.tenantId, t.providerName, t.modelName, t.modelType),
+])
+
+// ── provider_model_settings ──
+// Mirrors Python model: api/models/provider.py ProviderModelSetting class
+export const providerModelSettings = pgTable('provider_model_settings', {
+  id: varchar('id', { length: 36 }).primaryKey(),
+  tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+  providerName: varchar('provider_name', { length: 255 }).notNull(),
+  modelName: varchar('model_name', { length: 255 }).notNull(),
+  modelType: varchar('model_type', { length: 40 }).notNull(),
+  enabled: boolean('enabled').notNull().default(true),
+  loadBalancingEnabled: boolean('load_balancing_enabled').notNull().default(false),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (t) => [
+  index('provider_model_setting_tenant_provider_model_idx').on(t.tenantId, t.providerName, t.modelType),
+])
+
+// ── tenant_preferred_model_providers ──
+// Mirrors Python model: api/models/provider.py TenantPreferredModelProvider class
+export const tenantPreferredModelProviders = pgTable('tenant_preferred_model_providers', {
+  id: varchar('id', { length: 36 }).primaryKey(),
+  tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+  providerName: varchar('provider_name', { length: 255 }).notNull(),
+  preferredProviderType: varchar('preferred_provider_type', { length: 40 }).notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (t) => [
+  index('tenant_preferred_model_provider_tenant_provider_idx').on(t.tenantId, t.providerName),
+])

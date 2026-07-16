@@ -3,8 +3,8 @@
  * Mirrors Python api/controllers/console/workspace/model_providers.py and models.py.
  *
  * Provider/model discovery is backed by the TypeScript model-runtime module
- * (FilesystemPluginLoader + ModelProviderFactory). Credential-backed endpoints
- * (default-model) remain stubs pending migration of provider credential storage.
+ * (FilesystemPluginLoader + ModelProviderFactory). The default-model endpoint
+ * remains a stub pending migration of provider credential storage.
  *
  * GET /console/api/workspaces/current/model-providers
  * GET /console/api/workspaces/current/models/model-types/:model_type
@@ -13,11 +13,13 @@
  */
 
 import { Hono } from 'hono'
-import type { ModelType } from '../../../model-runtime/entities/model.js'
+import { ModelType } from '../../../model-runtime/entities/model.js'
 import { getModelProviderFactory } from '../../../model-runtime/runtime-instance.js'
+import { BadRequestError } from '../../../lib/errors.js'
 import { requireAccountInitialized } from '../../../middleware/account-init.js'
 import { requireAuth } from '../../../middleware/auth.js'
 import { resolveTenant } from '../../../middleware/tenant.js'
+import { getModelParameterRules } from '../../../services/model-provider.service.js'
 import type { AppEnv } from '../../../types/hono-env.js'
 
 export const modelProvidersRoute = new Hono<AppEnv>()
@@ -71,27 +73,36 @@ modelProvidersRoute.get(
 /**
  * GET /workspaces/current/model-providers/:provider/models/parameter-rules?model=:model
  * Returns parameter rules for a specific model.
- * Mirrors Python ModelProviderModelParameterRuleApi.get() from models.py L594-610.
+ * Mirrors Python ModelProviderModelParameterRuleApi.get() from models.py L594-610
+ * and ModelProviderService.get_model_parameter_rules() (LLM only).
  *
- * NOTE: Returns empty array stub — full implementation requires Python plugin system.
+ * Resolves the tenant's stored provider/model credentials, decrypts them, and
+ * returns the resulting parameter rules — or `[]` when no credentials exist.
  */
 modelProvidersRoute.get(
-  '/workspaces/current/model-providers/:provider{.+}/models/parameter-rules',
+  '/workspaces/current/model-providers/*/models/parameter-rules',
   requireAuth,
   requireAccountInitialized,
   resolveTenant,
   async (c) => {
-    const provider = c.req.param('provider')
+    // `provider` is a plugin id containing slashes (e.g. langgenius/deepseek/deepseek).
+    // Hono param regex ({.+}) does not span slashes once the app falls back from
+    // RegExpRouter, so extract it from the path (mirrors Flask <path:provider>).
+    const match = c.req.path.match(/model-providers\/(.+)\/models\/parameter-rules$/)
+    const provider = match ? decodeURIComponent(match[1]!) : ''
     const model = c.req.query('model')
+    // Mirrors Python ParserParameter: `model` is a required field.
     if (!model) {
-      return c.json({ data: [] })
+      throw new BadRequestError('model is required.')
     }
 
-    const factory = getModelProviderFactory()
-    const providerEntity = (await factory.getProviders()).find(
-      p => p.provider === provider || p.provider_name === provider,
-    )
-    const modelSchema = providerEntity?.models?.find(m => m.model === model)
-    return c.json({ data: modelSchema?.parameter_rules ?? [] })
+    const rules = await getModelParameterRules({
+      db: c.get('db'),
+      tenantId: c.get('tenantId')!,
+      provider,
+      model,
+    })
+
+    return c.json({ data: rules })
   },
 )
