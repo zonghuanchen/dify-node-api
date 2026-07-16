@@ -14,7 +14,7 @@ function boolEnv(defaultValue: boolean) {
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   HOST: z.string().default('0.0.0.0'),
-  PORT: z.coerce.number().default(5001),
+  PORT: z.coerce.number().default(5002),
   DATABASE_URL: z.string().default('postgresql://postgres:postgres@localhost:5432/dify'),
   REDIS_URL: z.string().default('redis://localhost:6379/0'),
   CORS_ORIGINS: z.string().default('*'),
@@ -24,7 +24,7 @@ const envSchema = z.object({
   ACCESS_TOKEN_EXPIRE_MINUTES: z.coerce.number().default(60),
   REFRESH_TOKEN_EXPIRE_DAYS: z.coerce.number().default(30),
   CONSOLE_WEB_URL: z.string().default('http://localhost:3000'),
-  CONSOLE_API_URL: z.string().default('http://localhost:5001'),
+  CONSOLE_API_URL: z.string().default('http://localhost:5002'),
 
   // ── Feature flags (mirror Python api/configs) ─────────────────
   ENABLE_EMAIL_CODE_LOGIN: boolEnv(false),
@@ -67,6 +67,15 @@ const envSchema = z.object({
 
   // ── Model runtime ────────────────────────────────────────────
   MODEL_PROVIDERS_DIR: z.string().default('./providers'),
+
+  // ── Plugin daemon ────────────────────────────────────────────────
+  PLUGIN_DAEMON_URL: z.string().default('http://localhost:5002'),
+  PLUGIN_DAEMON_KEY: z.string().default('plugin-api-key'),
+  PLUGIN_REMOTE_INSTALL_HOST: z.string().default('localhost'),
+  PLUGIN_REMOTE_INSTALL_PORT: z.coerce.number().default(5003),
+
+  // ── Marketplace ──────────────────────────────────────────────────
+  MARKETPLACE_API_URL: z.string().default('https://marketplace.dify.ai'),
 })
 
 function loadConfig() {
@@ -134,6 +143,15 @@ function loadConfig() {
 
     // Model runtime
     modelProvidersDir: parsed.MODEL_PROVIDERS_DIR,
+
+    // Plugin daemon
+    pluginDaemonUrl: parsed.PLUGIN_DAEMON_URL,
+    pluginDaemonKey: parsed.PLUGIN_DAEMON_KEY,
+    pluginRemoteInstallHost: parsed.PLUGIN_REMOTE_INSTALL_HOST,
+    pluginRemoteInstallPort: parsed.PLUGIN_REMOTE_INSTALL_PORT,
+
+    // Marketplace
+    marketplaceApiUrl: parsed.MARKETPLACE_API_URL,
   }
 }
 

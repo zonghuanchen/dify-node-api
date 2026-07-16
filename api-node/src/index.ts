@@ -34,6 +34,10 @@ import { specRoute } from './routes/console/spec.route.js'
 import { agentProvidersRoute } from './routes/console/workspaces/agent-providers.route.js'
 import { toolProvidersRoute } from './routes/console/workspaces/tool-providers.route.js'
 import { triggerProvidersRoute } from './routes/console/workspaces/trigger-providers.route.js'
+import { pluginTasksRoute } from './routes/console/workspaces/plugin-tasks.route.js'
+import { pluginBasicRoute } from './routes/console/workspaces/plugin-basic.route.js'
+import { pluginInstallRoute } from './routes/console/workspaces/plugin-install.route.js'
+import { pluginManageRoute } from './routes/console/workspaces/plugin-manage.route.js'
 import { workflowVariablesRoute } from './routes/console/workflow-variables.route.js'
 import { workflowCommentsRoute } from './routes/console/workflow-comments.route.js'
 import type { AppEnv } from './types/hono-env.js'
@@ -121,6 +125,18 @@ app.route('/console/api', toolProvidersRoute)
 
 // Trigger providers stub (authenticated — depends on Python plugin system)
 app.route('/console/api', triggerProvidersRoute)
+
+// Plugin tasks routes (authenticated — plugin install task management)
+app.route('/console/api', pluginTasksRoute)
+
+// Plugin basic routes (daemon proxies — debugging, manifests, icons, assets, readme)
+app.route('/console/api', pluginBasicRoute)
+
+// Plugin install routes (upload, install, uninstall, upgrade)
+app.route('/console/api', pluginInstallRoute)
+
+// Plugin management routes (list, permission, auto-upgrade)
+app.route('/console/api', pluginManageRoute)
 
 // Workflow variables routes (authenticated — draft variables, conversation vars, system vars)
 app.route('/console/api', workflowVariablesRoute)

@@ -527,3 +527,37 @@ export const tenantPreferredModelProviders = pgTable('tenant_preferred_model_pro
 }, (t) => [
   index('tenant_preferred_model_provider_tenant_provider_idx').on(t.tenantId, t.providerName),
 ])
+
+// ── account_plugin_permissions ──
+// Mirrors Python model: api/models/account.py TenantPluginPermission class
+// Table name is `account_plugin_permissions` (not tenant_plugin_permissions).
+// Enum values: 'everyone', 'admins', 'noone' (Python uses 'noone' for NOBODY).
+export const accountPluginPermissions = pgTable('account_plugin_permissions', {
+  id: varchar('id', { length: 36 }).primaryKey(),
+  tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+  installPermission: varchar('install_permission', { length: 16 }).notNull().default('everyone'),
+  debugPermission: varchar('debug_permission', { length: 16 }).notNull().default('noone'),
+}, (t) => [
+  unique('unique_tenant_plugin').on(t.tenantId),
+])
+
+// ── tenant_plugin_auto_upgrade_strategies ──
+// Mirrors Python model: api/models/account.py TenantPluginAutoUpgradeStrategy class
+// category enum values: 'tool', 'model', 'extension', 'agent-strategy', 'datasource', 'trigger'
+// strategy_setting enum values: 'disabled', 'fix_only', 'latest'
+// upgrade_mode enum values: 'all', 'partial', 'exclude'
+export const tenantPluginAutoUpgradeStrategies = pgTable('tenant_plugin_auto_upgrade_strategies', {
+  id: varchar('id', { length: 36 }).primaryKey(),
+  tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+  category: varchar('category', { length: 32 }).notNull().default('tool'),
+  strategySetting: varchar('strategy_setting', { length: 16 }).notNull().default('fix_only'),
+  upgradeMode: varchar('upgrade_mode', { length: 16 }).notNull().default('exclude'),
+  excludePlugins: json('exclude_plugins').$type<string[]>().notNull().default([]),
+  includePlugins: json('include_plugins').$type<string[]>().notNull().default([]),
+  upgradeTimeOfDay: integer('upgrade_time_of_day').notNull().default(0),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (t) => [
+  unique('unique_tenant_plugin_auto_upgrade_strategy').on(t.tenantId, t.category),
+  index('idx_tenant_plugin_auto_upgrade_strategy_time').on(t.upgradeTimeOfDay),
+])
